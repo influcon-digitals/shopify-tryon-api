@@ -9,30 +9,11 @@ app.use(express.json({ limit: '50mb' }));
 const API_KEY = process.env.AABHAS_LICENSE_KEY;
 const ORG_ID = "dd0c3fc8-6849-4415-99f1-8beeb490fa91"; 
 
-// Helper: Downloads Shopify image and converts to safe Base64
-async function convertToBase64(url) {
-    try {
-        const response = await fetch(url);
-        const buffer = await response.buffer();
-        const type = response.headers.get('content-type') || 'image/jpeg';
-        return `data:${type};base64,${buffer.toString('base64')}`;
-    } catch (e) {
-        console.error("Failed to convert image:", e);
-        return url; // fallback
-    }
-}
-
 app.post('/api/run', async (req, res) => {
   const { userImage, clothImage, templateId, category = "t-shirt", topBottom = "top" } = req.body;
   
   const finalTemplateId = templateId || "f9cc7b45-6c90-4f52-9cb3-6b964c88173a";
   const traceId = `trace_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-  // 1. Force cloth image to Base64 so the AI doesn't have to download it!
-  let safeClothImage = clothImage;
-  if (clothImage && clothImage.startsWith('http')) {
-      safeClothImage = await convertToBase64(clothImage);
-  }
 
   try {
     const response = await fetch(`https://api.aabhas.tech/v1/orgs/${ORG_ID}/template/${finalTemplateId}/run`, {
@@ -44,20 +25,21 @@ app.post('/api/run', async (req, res) => {
       body: JSON.stringify({
         entityId: "entity_default",
         traceId: traceId,
+        aspectRatioKey: "1:1", // Restored this to ensure the AI doesn't reject the size
         variables: {
           "garment_category": category,
           "top_bottom": topBottom
         },
         options: {},
         inputs: {
-          // 2. THE CATCH-ALL: We send every name variation so the AI CANNOT miss it
-          "load-garment-image-76": safeClothImage,
-          "load-person-image-129": userImage,
-          "load-image-76": safeClothImage,
+          // THE REAL FIX: Sending BOTH the strict API name and your custom cURL name.
+          // NODE 76 = THE CLOTHES
+          "load-image-76": clothImage,
+          "load-garment-image-76": clothImage,
+
+          // NODE 129 = THE PERSON
           "load-image-129": userImage,
-          // Flipped versions just in case your node numbers are backward!
-          "load-garment-image-129": safeClothImage,
-          "load-person-image-76": userImage
+          "load-person-image-129": userImage
         }
       })
     });
@@ -88,4 +70,4 @@ app.get('/api/status/:traceId', async (req, res) => {
   }
 });
 
-module.exports = app
+module.exports = app;
