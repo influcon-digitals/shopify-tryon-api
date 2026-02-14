@@ -24,18 +24,18 @@ app.post('/api/run', async (req, res) => {
         'Content-Type': 'application/json',
         'x-license-key': API_KEY
       },
+      // THIS NOW MATCHES YOUR CURL EXACTLY
       body: JSON.stringify({
         entityId: "entity_default",
         traceId: traceId,
-        aspectRatioKey: "1:1",
         variables: {
           "garment_category": category,
           "top_bottom": topBottom
         },
+        options: {},
         inputs: {
-          // THESE MUST MATCH YOUR TEMPLATE EXACTLY
-          "load-garment-image-76": clothImage,  // The Product
-          "load-person-image-129": userImage    // The User
+          "load-garment-image-76": clothImage,  
+          "load-person-image-129": userImage    
         }
       })
     });
