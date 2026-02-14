@@ -9,15 +9,13 @@ app.use(express.json({ limit: '50mb' }));
 const API_KEY = process.env.AABHAS_LICENSE_KEY;
 const ORG_ID = "dd0c3fc8-6849-4415-99f1-8beeb490fa91"; 
 
-// 1. Start the Try-On Process
 app.post('/api/run', async (req, res) => {
-  // NEW: We are now accepting both 'category' and 'topBottom'
   const { userImage, clothImage, templateId, category = "t-shirt", topBottom = "top" } = req.body;
   
   const finalTemplateId = templateId || "f9cc7b45-6c90-4f52-9cb3-6b964c88173a";
   const traceId = `trace_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-  console.log(`Starting try-on. Template: ${finalTemplateId}, Category: ${category}, Type: ${topBottom}`);
+  console.log(`Try-On -> Category: ${category}, Type: ${topBottom}`);
 
   try {
     const response = await fetch(`https://api.aabhas.tech/v1/orgs/${ORG_ID}/template/${finalTemplateId}/run`, {
@@ -31,19 +29,19 @@ app.post('/api/run', async (req, res) => {
         traceId: traceId,
         aspectRatioKey: "1:1",
         variables: {
-          "garment_category": category,   // e.g., "chest print t-shirt", "slip", "leggings"
-          "top_bottom": topBottom         // NEW: strictly "top" or "bottom"
+          "garment_category": category,
+          "top_bottom": topBottom
         },
         inputs: {
-          "load-garment-image-76": clothImage,  
-          "load-person-image-129": userImage    
+          // THESE MUST MATCH YOUR TEMPLATE EXACTLY
+          "load-garment-image-76": clothImage,  // The Product
+          "load-person-image-129": userImage    // The User
         }
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("API Error:", errorText);
       return res.status(response.status).json({ error: errorText });
     }
 
@@ -51,12 +49,10 @@ app.post('/api/run', async (req, res) => {
     res.json({ traceId: traceId, status: "started" });
 
   } catch (error) {
-    console.error("Server Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 2. Check for Results
 app.get('/api/status/:traceId', async (req, res) => {
   const { traceId } = req.params;
   try {
