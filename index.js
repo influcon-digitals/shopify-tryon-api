@@ -25,20 +25,15 @@ app.post('/api/run', async (req, res) => {
       body: JSON.stringify({
         entityId: "entity_default",
         traceId: traceId,
-        aspectRatioKey: "1:1", // Restored this to ensure the AI doesn't reject the size
+        aspectRatioKey: "1:1", 
         variables: {
           "garment_category": category,
           "top_bottom": topBottom
         },
         options: {},
         inputs: {
-          // THE REAL FIX: Sending BOTH the strict API name and your custom cURL name.
-          // NODE 76 = THE CLOTHES
-          "load-image-76": clothImage,
+          // STRICTLY 2 IMAGES - Exactly matching your cURL
           "load-garment-image-76": clothImage,
-
-          // NODE 129 = THE PERSON
-          "load-image-129": userImage,
           "load-person-image-129": userImage
         }
       })
